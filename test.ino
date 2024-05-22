@@ -100,21 +100,6 @@ void printByteBits(byte b) {
   Serial.println(); // Move to the next line after printing all bits
 }
 
-unsigned char hello;
-unsigned char _hello = 0x13;
-
-unsigned char val[20];
-int len1, len2, len3;
-unsigned char _val = 0x06;
-
-unsigned char val2[20];
-unsigned char _val2 = 0x06;
-
-unsigned char val3[20];
-int len = 0;
-int MAXLEN = 20;
-String msg = "";
-
 unsigned char buf[64];
 int l = 0;
 unsigned long lastByteTime = 0;
@@ -124,20 +109,28 @@ double value;
 const unsigned char varHeader[4] = {0x3a, 0x56, 0x41, 0x4c};  // :VAL
 const unsigned char valHeader[5] = {0x3a, 0x00, 0x01, 0x00, 0x01 };  // :0101
 
+double convert(char bcd) {
+    // Each byte contains two BCD digits
+    unsigned char highNibble = (bcd >> 4) & 0x0F; // High nibble
+    unsigned char lowNibble = bcd & 0x0F;          // Low nibble
+    
+    return 10.0 * (double)highNibble + (double)lowNibble;
+}
+
 double parseBCD(unsigned char* bcdArray, int startIndex, int endIndex) {
   unsigned long long number = 0;
   
   for (int i = startIndex; i < endIndex; i++) {
-    // Each byte contains two BCD digits
-    unsigned char highNibble = (bcdArray[i] >> 4) & 0x0F; // High nibble
-    unsigned char lowNibble = bcdArray[i] & 0x0F;          // Low nibble
-    
-    // Add the high nibble to the number
-    number = number * 10 + highNibble;
-    // Add the low nibble to the number
-    number = number * 10 + lowNibble;
+    number = number * 100 + convert(bcdArray[i]);
   }
-  return (double)number/(double)pow(10, endIndex - bcdArray[14]);
+
+  double exps = (bcdArray[13] == 1) ? 
+    endIndex - convert(bcdArray[14]) 
+    : 100 - convert(bcdArray[14]) + endIndex;
+  
+  double scale = pow(10, exps);
+
+  return (double)number/scale;
 }
 
 void loop() {
