@@ -10,3 +10,7 @@ The handshake protocol is described in detail here:
 https://www.grindheim.net/electronics/casio-comm.pdf
 and a neat implementation is found here:
 https://github.com/nsg21/Arduino-Casio-Serial-library/blob/master/CasioSerial.cpp
+
+Oh, one more thing: Since I am using the RX/TX pins to communicate with the calculator, I need some other way of logging from the ESP.
+I know there are tools for this kind of thing, but I simply post (using GET actually) to a small Perl script on a server I have, which appends to a txt file.
+The log can then be viewed by SSH-ing to that server, and doing `watch -n 1 tail -n 30 log.txt`
