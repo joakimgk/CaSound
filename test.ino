@@ -6,6 +6,7 @@
 
 #define DATABASE_URL "./log.cgi"
 #define STATUS_LED 2
+#define TIMEOUT 100 // Timeout in milliseconds
 #define DEBUG false
 
 const char* ssid     = "SSID";         // The SSID (name) of the Wi-Fi network you want to connect to
@@ -66,7 +67,7 @@ void setup() {
     digitalWrite(STATUS_LED, HIGH);  // turn off LED
   }
 
-  
+  /*
   ArduinoOTA.onStart([]() {
     createLog("Start");
   });
@@ -85,6 +86,7 @@ void setup() {
     else if (error == OTA_END_ERROR) createLog("End Failed");
   });
   ArduinoOTA.begin();
+  */
 
   createLog("\nHeisan!! @ " + WiFi.localIP().toString());
   createLog(String(DATABASE_URL));
@@ -113,78 +115,58 @@ int len = 0;
 int MAXLEN = 20;
 String msg = "";
 
+unsigned char buf[64];
+int l = 0;
+unsigned long lastByteTime = 0;
+unsigned char variable;
+double value;
+
+const unsigned char varHeader[4] = {0x3a, 0x56, 0x41, 0x4c};  // :VAL
+const unsigned char valHeader[5] = {0x3a, 0x00, 0x01, 0x00, 0x01 };  // :0101
+
+double parseBCD(unsigned char* bcdArray, int startIndex, int endIndex) {
+  unsigned long long number = 0;
+  
+  for (int i = startIndex; i < endIndex; i++) {
+    // Each byte contains two BCD digits
+    unsigned char highNibble = (bcdArray[i] >> 4) & 0x0F; // High nibble
+    unsigned char lowNibble = bcdArray[i] & 0x0F;          // Low nibble
+    
+    // Add the high nibble to the number
+    number = number * 10 + highNibble;
+    // Add the low nibble to the number
+    number = number * 10 + lowNibble;
+  }
+  return (double)number/(double)pow(10, endIndex - bcdArray[14]);
+}
+
 void loop() {
-  ArduinoOTA.handle();
+  if (Serial.available() > 0) {
+    while (Serial.available() > 0) {
+      buf[l++] = Serial.read();
+      lastByteTime = millis(); // Record the time when the last byte was received
+    }
+  } else if (l > 0 && (millis() - lastByteTime) > TIMEOUT) {
+    // Process the buffer as no more bytes have been received within the timeout period
+    String msg = "Read " + String(l) + " bytes: ";
+    for (int i = 0; i < l; i++) {
+      msg += " " + String(buf[i], HEX);
+    }
+    createLog(msg);
 
-  while (!Serial.available()) {
+    if (l == 1 && buf[0] == 0x15) {
+      Serial.write(0x13); // ACK byte for 0x15
+    } else {
+      if (memcmp(buf, varHeader, 4) == 0) {
+        variable = buf[11];
+        createLog(String((char)variable));
+      }
+      if (memcmp(buf, valHeader, 5) == 0) {
+        value = parseBCD(buf, 5, 12);
+        createLog(String(value));
+      }
+      Serial.write(0x06); // ACK byte for other cases
+    }
+    l = 0; // Reset buffer index for the next message
   }
-  unsigned char hello = Serial.read();  // 0x15
-
-  delay(20);
-  Serial.write(0x13);
-
-  while (!Serial.available()) {
-  }
-  len = 0;
-  while (Serial.available() && len < MAXLEN) {
-    val[len++] = Serial.read();
-  }
-  val[len] = '\0';
-  len1 = len;
-
-  delay(20);
-  Serial.write(0x06);
-
-  while (!Serial.available()) {
-  }
-  len = 0;
-  while (Serial.available() && len < MAXLEN) {
-    val2[len++] = Serial.read();
-  }
-  val2[len] = '\0';
-  len2 = len;
-
-  delay(20);
-  Serial.write(0x06);
-
-  while (!Serial.available()) {
-  }
-  len = 0;
-  while (Serial.available() && len < MAXLEN) {
-    val3[len++] = Serial.read();
-  }
-  val3[len] = '\0';
-  len3 = len;
-
-  msg = "Read 0x" + String(hello, HEX);
-  createLog(msg);
-
-  msg = "Sent 0x" + String(0x13, HEX);
-  createLog(msg);
-
-  msg = "Read " + String(len1) + " bytes: ";
-  for (int i = 0; i < len1; i++) {
-    msg += " 0x" + String(val[i], HEX);
-  }
-  createLog(msg);
-
-  msg = "Sent 0x" + String(0x06, HEX);
-  createLog(msg);
-
-  msg = "Read " + String(len2) + " bytes: ";
-  for (int i = 0; i < len2; i++) {
-    msg += " 0x" + String(val2[i], HEX);
-  }
-  createLog(msg);
-
-  msg = "Sent 0x" + String(0x06, HEX);
-  createLog(msg);
-
-  msg = "Read " + String(len3) + " bytes: ";
-  for (int i = 0; i < len3; i++) {
-    msg += " 0x" + String(val3[i], HEX);
-  }
-  createLog(msg);
-
-  //printByteBits(receivedChar);
 }
