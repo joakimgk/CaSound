@@ -4,7 +4,7 @@ But now that I know how to do it, I am no longer bored in school making games on
 
 However! It's always interesting to figure out how stuff works, so here is a small ESP8266 (Arduino) sketch which interfaces the Casio.
 The calculator performs a little handshake while transmitting the actual numerical value, which the ESP has to take part in.
-Essentially, the calculator sends some bytes and expects a certain byte in return. To me, it was interesting to learn how to read a "stream" of bytes from serial without using DDR interrupts (as I would on ATMEL chips), and also learn how to "parse" the HEX bytes and the BCD numeric payload.
+Essentially, the calculator sends some bytes and expects a certain byte in return. To me, it was interesting to learn how to read a "stream" of bytes from serial without using UDR interrupts (as I would on ATMEL chips), and also learn how to "parse" the HEX bytes and the BCD numeric payload.
 
 The handshake protocol is described in detail here: 
 https://www.grindheim.net/electronics/casio-comm.pdf
