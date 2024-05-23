@@ -135,6 +135,7 @@ double parseBCD(unsigned char* bcdArray, int startIndex, int endIndex) {
 
 // TODO: Try moving serial read out of main loop
 // https://github.com/MRJ-XZ/ESP8266-Serial-Interrupt/blob/main/InterruptExample/InterruptExample.cpp
+// or https://www.youtube.com/watch?v=EJ9Ue1Al2X0
 void loop() {
   if (Serial.available() > 0) {
     while (Serial.available() > 0) {
