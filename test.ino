@@ -3,16 +3,20 @@
 #include <WiFiClient.h>
 #include <UrlEncode.h>
 #include <ArduinoOTA.h>
+#include <Arduino.h>
 
 #define DATABASE_URL "./log.cgi"
 #define STATUS_LED 2
 #define TIMEOUT 100 // Timeout in milliseconds
+
+#define LOG false
 #define DEBUG false
 
 const char* ssid     = "SSID";         // The SSID (name) of the Wi-Fi network you want to connect to
 const char* password = "password";     // The password of the Wi-Fi network
 
 void createLog(String event) {
+  if (!LOG) return;
   if (DEBUG) {
     Serial.println(event);
     return;
@@ -52,7 +56,8 @@ void setup() {
 
   pinMode(STATUS_LED, OUTPUT);
   int blink = LOW;
-  
+  tone(2, 1000, 500);
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);             // Connect to the network
   while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
@@ -88,8 +93,10 @@ void setup() {
   ArduinoOTA.begin();
   */
 
-  createLog("\nHeisan!! @ " + WiFi.localIP().toString());
-  createLog(String(DATABASE_URL));
+  if (LOG) {
+    createLog("\nHeisan!! @ " + WiFi.localIP().toString());
+    createLog(String(DATABASE_URL));
+  }
 }
 
 
@@ -133,9 +140,29 @@ double parseBCD(unsigned char* bcdArray, int startIndex, int endIndex) {
   return (double)number/scale;
 }
 
-// TODO: Try moving serial read out of main loop
-// https://github.com/MRJ-XZ/ESP8266-Serial-Interrupt/blob/main/InterruptExample/InterruptExample.cpp
-// or https://www.youtube.com/watch?v=EJ9Ue1Al2X0
+void processValue(int value) {
+  switch (value) {
+    case 1344:
+      digitalWrite(STATUS_LED, LOW);  // turn on LED
+      break;
+
+    case 22:
+      digitalWrite(STATUS_LED, HIGH);  // turn off LED
+      break;
+    
+    case 16:
+      tone(2, 520, 1000);
+      break;
+
+    case 17:
+      tone(2, 440, 1000);
+      break;
+    
+    default:
+      break;
+  }
+}
+
 void loop() {
   if (Serial.available() > 0) {
     while (Serial.available() > 0) {
@@ -143,23 +170,30 @@ void loop() {
       lastByteTime = millis(); // Record the time when the last byte was received
     }
   } else if (l > 0 && (millis() - lastByteTime) > TIMEOUT) {
-    // Process the buffer as no more bytes have been received within the timeout period
-    String msg = "Read " + String(l) + " bytes: ";
-    for (int i = 0; i < l; i++) {
-      msg += " " + String(buf[i], HEX);
+
+    if (LOG) {
+      // Process the buffer as no more bytes have been received within the timeout period
+      String msg = "Read " + String(l) + " bytes: ";
+      for (int i = 0; i < l; i++) {
+        msg += " " + String(buf[i], HEX);
+      }
+      createLog(msg);
     }
-    createLog(msg);
 
     if (l == 1 && buf[0] == 0x15) {
       Serial.write(0x13); // ACK byte for 0x15
     } else {
       if (memcmp(buf, varHeader, 4) == 0) {
         variable = buf[11];
-        createLog(String((char)variable));
+        if (LOG) createLog(String((char)variable));
       }
       if (memcmp(buf, valHeader, 5) == 0) {
         value = parseBCD(buf, 5, 12);
-        createLog(String(value));
+
+        processValue((int)value);  
+
+        if (LOG) createLog(String(value));
+        buf[0] = 0;  // clear buffer
       }
       Serial.write(0x06); // ACK byte for other cases
     }
