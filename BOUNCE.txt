@@ -1,0 +1,25 @@
+73->M
+23->N
+ViewWindow 1,M,0,1,N,0
+'SOUND 1
+16->U
+'SOUND 2
+17->P
+1->X
+1->Y
+'SPEED
+1->S
+S->A
+S->B
+Lbl 0
+Plot X,Y
+X+A->X
+Y+B->Y
+'A way to make a logical OR (thanks to ChatGPT)
+(X>M)+(X<1)=>Send(P)
+(Y>N)+(Y<1)=>Send(U)
+X>M=>-S->A
+X<1=>S->A
+Y>N=>-S->B
+Y<1=>S->B
+Goto 0
