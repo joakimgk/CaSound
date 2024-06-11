@@ -20,7 +20,11 @@ The log can then be viewed by SSH-ing to that server, and doing `watch -n 1 tail
 
 ## Schematic
 
-![image](https://github.com/joakimgk/CaSound/assets/10852291/b21beb62-7521-4815-b455-5d496441e937)
-
-
 ![image](https://github.com/joakimgk/CaSound/assets/10852291/4ce267cf-28d8-472d-9075-1611e13c8fa0)
+
+The idea is to hook the `OUTPUT` (i.e. GPIO2) to a piezo buzzer. Pin 3 is always ground in all the ports.
+The `COMM` port is for connecting to the Casio, where pin 3 is sleeve (ground), pin 2 is ring (TX), and pin 1 is tip (RX).
+These pins are connected to the RX/TX pins on the ESP in a "crossed" manner. The `FLASH` port is for updating the firmware (ino sketch) on the ESP, through a USB-to-TTL converter.
+This converter (i.e. port FLASH) must be disconnected when using the COMM port. Hold down the `PROGRAM` button and reboot the ESP to enter flash mode.
+
+![image](https://github.com/joakimgk/CaSound/assets/10852291/b21beb62-7521-4815-b455-5d496441e937)
